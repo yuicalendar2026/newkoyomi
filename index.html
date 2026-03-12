@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>暦注カレンダー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;700&family=Shippori+Mincho:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1208;--paper:#f5efe0;--aged:#e8dcc8;--vermilion:#c0392b;--gold:#b8860b;--brush:#2c1810;--muted:#7a6a55;--accent:#8b1a1a;--blue-dark:#1a3a6b;--green-dark:#2a5a2a;--purple:#5a3a7a;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--ink);font-family:'Noto Serif JP',serif;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:30px 20px;}
+.scroll-wrap{width:100%;max-width:980px;}
+.scroll-rod{height:20px;background:linear-gradient(180deg,#8B6914 0%,#C8960C 30%,#FFD700 50%,#C8960C 70%,#8B6914 100%);border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,.6);position:relative;z-index:10;}
+.scroll-rod::before,.scroll-rod::after{content:'';position:absolute;top:-4px;width:28px;height:28px;background:linear-gradient(135deg,#C8960C,#8B6914);border-radius:50%;border:2px solid #FFD700;}
+.scroll-rod::before{left:-8px;}.scroll-rod::after{right:-8px;}
+.scroll-body{background:var(--paper);background-image:linear-gradient(160deg,#f8f0dc 0%,#f0e8cc 40%,#ede0c4 100%);padding:36px 44px;border-left:8px solid;border-right:8px solid;border-image:linear-gradient(180deg,#8B6914,#C8960C 30%,#8B6914) 1;}
+.header{text-align:center;margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid var(--gold);position:relative;}
+.header::before{content:'◈';position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);background:var(--paper);padding:0 12px;color:var(--gold);font-size:16px;}
+.title-main{font-family:'Shippori Mincho',serif;font-size:clamp(26px,4.5vw,40px);font-weight:800;color:var(--brush);letter-spacing:.3em;}
+.title-sub{font-size:11px;color:var(--muted);letter-spacing:.4em;margin-top:5px;}
+.nav-row{display:flex;align-items:center;justify-content:center;gap:20px;margin:18px 0 8px;}
+.nav-btn{background:none;border:1px solid var(--gold);color:var(--gold);font-size:18px;width:34px;height:34px;cursor:pointer;border-radius:4px;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.nav-btn:hover{background:var(--gold);color:var(--paper);}
+.month-label{font-family:'Shippori Mincho',serif;font-size:clamp(16px,2.8vw,24px);font-weight:700;color:var(--brush);letter-spacing:.2em;min-width:220px;text-align:center;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:12px;}
+.dow-header{text-align:center;font-size:11px;font-weight:500;letter-spacing:.15em;padding:7px 4px;color:var(--muted);border-bottom:1px solid var(--aged);}
+.dow-header.sun{color:var(--vermilion);}.dow-header.sat{color:var(--blue-dark);}
+.day-cell{min-height:115px;padding:5px 5px 6px;cursor:pointer;transition:background .15s;border:1px solid transparent;border-radius:2px;position:relative;display:flex;flex-direction:column;gap:1px;overflow:hidden;}
+.day-cell:hover{background:rgba(184,134,11,.08);border-color:rgba(184,134,11,.3);}
+.day-cell.today{background:rgba(192,57,43,.06);border-color:var(--vermilion);}
+.day-cell.other-month{opacity:.32;}
+.day-cell.has-tensha::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-top:18px solid rgba(192,57,43,.65);border-left:18px solid transparent;}
+.day-cell.has-kichi::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-top:16px solid rgba(184,134,11,.45);border-left:16px solid transparent;}
+.day-num{font-family:'Shippori Mincho',serif;font-size:19px;font-weight:700;line-height:1;color:var(--brush);}
+.day-cell.sun .day-num{color:var(--vermilion);}.day-cell.sat .day-num{color:var(--blue-dark);}
+.today-mark{display:inline-block;background:var(--vermilion);color:white;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font-size:16px;}
+.lbl{font-size:8.5px;line-height:1.2;padding:1px 2px;border-radius:2px;width:fit-content;}
+.lbl-ry{font-size:9.5px;font-weight:500;}
+.lbl-ry.taian{color:var(--vermilion);border:1px solid var(--vermilion);}
+.lbl-ry.shakku{color:#8b1a1a;}.lbl-ry.tomobiki{color:var(--gold);}
+.lbl-ry.senbu{color:var(--green-dark);}.lbl-ry.butsumetsu{color:var(--purple);}
+.lbl-ry.sensho{color:var(--muted);}
+.lbl-ks{color:var(--gold);font-weight:500;font-size:8.5px;}
+.lbl-jc{color:var(--muted);font-size:8px;}
+.lbl-sk{color:var(--vermilion);background:rgba(192,57,43,.08);font-weight:500;font-size:8px;}
+.lbl-hol{color:var(--accent);font-size:8px;font-weight:500;}
+.lbl-tensha{color:white;background:var(--vermilion);font-weight:700;font-size:8px;padding:1px 3px;}
+.lbl-ichiryu{color:var(--gold);background:rgba(184,134,11,.13);font-weight:600;font-size:8px;border:1px solid rgba(184,134,11,.35);}
+.lbl-funasoju{color:var(--purple);background:rgba(90,58,122,.08);font-size:8px;border:1px solid rgba(90,58,122,.25);}
+.detail-panel{margin-top:20px;padding:20px 24px;background:rgba(139,105,20,.06);border:1px solid rgba(184,134,11,.25);border-radius:4px;display:none;}
+.detail-panel.visible{display:block;}
+.detail-date{font-family:'Shippori Mincho',serif;font-size:20px;font-weight:700;color:var(--brush);margin-bottom:16px;letter-spacing:.12em;}
+.detail-sections{display:flex;flex-direction:column;gap:18px;}
+.block-title{font-size:9px;letter-spacing:.25em;color:var(--muted);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--aged);}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.di{display:flex;flex-direction:column;gap:2px;}
+.di-label{font-size:9px;letter-spacing:.2em;color:var(--muted);}
+.di-val{font-size:14px;color:var(--brush);font-weight:500;letter-spacing:.05em;line-height:1.4;}
+.di-val.kichi{color:var(--gold);}.di-val.kyou{color:var(--purple);}
+.di-val.holiday{color:var(--accent);}
+.sd-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.sd-tag{font-size:11px;padding:2px 10px;border-radius:3px;font-weight:600;}
+.sd-tag.tensha{background:var(--vermilion);color:white;}
+.sd-tag.kichi{background:rgba(184,134,11,.15);color:var(--gold);border:1px solid rgba(184,134,11,.4);}
+.sd-tag.kyou{background:rgba(90,58,122,.1);color:var(--purple);border:1px solid rgba(90,58,122,.3);}
+.sd-descs{display:flex;flex-direction:column;gap:4px;}
+.sd-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+.sd-desc b{color:var(--brush);}
+.legend{margin-top:24px;padding-top:18px;border-top:1px solid var(--aged);display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+.legend-section h4{font-size:9px;letter-spacing:.2em;color:var(--muted);margin-bottom:6px;font-weight:400;}
+.legend-items{display:flex;flex-wrap:wrap;gap:5px;}
+.legend-item{font-size:9px;display:flex;align-items:center;gap:4px;color:var(--brush);}
+.data-note{font-size:9px;color:var(--muted);margin-top:8px;line-height:1.6;}
+.watermark{text-align:center;margin-top:18px;font-size:10px;color:rgba(122,106,85,.4);letter-spacing:.3em;}
+@media(max-width:640px){.scroll-body{padding:20px 14px;}.day-cell{min-height:90px;padding:3px;}.day-num{font-size:15px;}.lbl{font-size:7px;}}
+</style>
+</head>
+<body>
+<div class="scroll-wrap">
+  <div class="scroll-rod"></div>
+  <div class="scroll-body">
+    <div class="header">
+      <div class="title-main">暦　注　カレンダー</div>
+      <div class="title-sub">REKICHU · JAPANESE TRADITIONAL ALMANAC</div>
+    </div>
+    <div class="nav-row">
+      <button class="nav-btn" id="prevBtn">◁</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="nav-btn" id="nextBtn">▷</button>
+    </div>
+    <div class="cal-grid" id="calGrid">
+      <div class="dow-header sun">日</div><div class="dow-header">月</div>
+      <div class="dow-header">火</div><div class="dow-header">水</div>
+      <div class="dow-header">木</div><div class="dow-header">金</div>
+      <div class="dow-header sat">土</div>
+    </div>
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-date" id="detailDate"></div>
+      <div class="detail-sections" id="detailSections"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-section"><h4>── 六 曜 ──</h4><div class="legend-items">
+        <span class="legend-item"><span class="lbl lbl-ry taian">大安</span>万事大吉</span>
+        <span class="legend-item"><span class="lbl lbl-ry shakku">赤口</span>正午のみ吉</span>
+        <span class="legend-item"><span class="lbl lbl-ry sensho">先勝</span>午前吉</span>
+        <span class="legend-item"><span class="lbl lbl-ry tomobiki">友引</span>引き合い</span>
+        <span class="legend-item"><span class="lbl lbl-ry senbu">先負</span>午後吉</span>
+        <span class="legend-item"><span class="lbl lbl-ry butsumetsu">仏滅</span>凶日</span>
+      </div></div>
+      <div class="legend-section"><h4>── 選 日（吉） ──</h4><div class="legend-items">
+        <span class="legend-item"><span class="lbl lbl-tensha">天赦日</span>最上の吉日</span>
+        <span class="legend-item"><span class="lbl lbl-ichiryu">一粒万倍</span>新事始めに吉</span>
+      </div></div>
+      <div class="legend-section"><h4>── 選 日（凶） ──</h4><div class="legend-items">
+        <span class="legend-item"><span class="lbl lbl-funasoju">不成就</span>万事成就せず</span>
+      </div></div>
+      <div class="legend-section"><h4>── 暦 注 下 段 ──</h4>
+        <div style="font-size:9px;color:var(--muted)">日付クリックで十二直・二十八宿・中段・納音を表示</div>
+      </div>
+    </div>
+    <div class="data-note">
+      ※ 六曜はarachne.jp照合済みの旧暦朔日テーブルを使用。一粒万倍日・天赦日・不成就日は2025〜2026年データをarachne.jp全件照合済み。
+    </div>
+    <div class="watermark">◈ 令和暦 ◈</div>
+  </div>
+  <div class="scroll-rod"></div>
+</div>
+<script>
+// ══════════════════════════════════════════════
+// 旧暦 朔日テーブル（arachne.jp六曜パターンから逆算）
+// 六曜 = ROKUYO[(lm + ld - 2) % 6]  ただし閏月はlm=60→0として計算
+// ══════════════════════════════════════════════
+const SAKU=[
+  // 前後のsentinel
+  [11,2024,11,1],[12,2024,12,1],
+  // 2025年
+  [1,2025,1,29],[2,2025,2,28],[3,2025,3,29],[4,2025,4,28],
+  [5,2025,5,27],[6,2025,6,25],[60,2025,7,25],// 閏6月
+  [7,2025,8,23],[8,2025,9,22],[9,2025,10,21],
+  [10,2025,11,20],[11,2025,12,20],
+  // 2026年
+  [12,2026,1,19],[1,2026,2,17],[2,2026,3,19],[3,2026,4,17],
+  [4,2026,5,17],[5,2026,6,15],[6,2026,7,14],[7,2026,8,13],
+  [8,2026,9,11],[9,2026,10,10],[10,2026,11,9],[11,2026,12,9],
+  [12,2027,1,8]// sentinel
+];
+
+function ms(y,m,d){return new Date(y,m-1,d).getTime();}
+function getLunar(y,m,d){
+const t=ms(y,m,d);
+for(let i=0;i<SAKU.length-1;i++){
+const [lm,sy,sm,sd]=SAKU[i],[,ny,nm,nd]=SAKU[i+1];
+const s=ms(sy,sm,sd),n=ms(ny,nm,nd);
+if(t>=s&&t<n)return{lm,ld:Math.floor((t-s)/86400000)+1};
+}
+return null;
+}
+
+const ROKUYO=[‘先勝’,‘友引’,‘先負’,‘仏滅’,‘大安’,‘赤口’];
+const RY_CLS =[‘sensho’,‘tomobiki’,‘senbu’,‘butsumetsu’,‘taian’,‘shakku’];
+function getRyIdx(y,m,d){
+const l=getLunar(y,m,d);
+if(!l)return 0;
+const lmc=l.lm===60?0:l.lm;
+return((lmc+l.ld-2)%6+6)%6;
+}
+
+// 干支 基準: 2026-02-19=甲子(0) ← 2026/3/5=戊寅(14)から逆算確認済み
+const JIKKAN=[‘甲’,‘乙’,‘丙’,‘丁’,‘戊’,‘己’,‘庚’,‘辛’,‘壬’,‘癸’];
+const JUNISHI=[‘子’,‘丑’,‘寅’,‘卯’,‘辰’,‘巳’,‘午’,‘未’,‘申’,‘酉’,‘戌’,‘亥’];
+const JUNISHI_R=[‘ね’,‘うし’,‘とら’,‘う’,‘たつ’,‘み’,‘うま’,‘ひつじ’,‘さる’,‘とり’,‘いぬ’,‘い’];
+const BK=ms(2026,2,19);
+function getKS(y,m,d){
+const idx=((Math.floor((ms(y,m,d)-BK)/86400000)%60)+60)%60;
+return{jk:JIKKAN[idx%10],js:JUNISHI[idx%12],yr:JUNISHI_R[idx%12],idx};
+}
+function getYearKS(y){const i=((y-1984)%60+60)%60;return JIKKAN[i%10]+JUNISHI[i%12];}
+
+// 九星 基準: 2000-01-01=五黄(4) ← 2026/3/5=三碧(2)から確認済み
+const KUSEI=[‘一白水星’,‘二黒土星’,‘三碧木星’,‘四緑木星’,‘五黄土星’,‘六白金星’,‘七赤金星’,‘八白土星’,‘九紫火星’];
+const BKU=ms(2000,1,1);
+function getKusei(y,m,d){return KUSEI[((4-Math.floor((ms(y,m,d)-BKU)/86400000))%9+9)%9];}
+
+// 十二直 基準: 2026-03-05=閉(11) ← hotdoglab.jp確認済み
+const JC=[‘建’,‘除’,‘満’,‘平’,‘定’,‘執’,‘破’,‘危’,‘成’,‘納’,‘開’,‘閉’];
+const JC_R={建:‘たつ’,除:‘のぞく’,満:‘みつ’,平:‘たいら’,定:‘さだん’,執:‘とる’,破:‘やぶる’,危:‘あやぶ’,成:‘なる’,納:‘おさん’,開:‘ひらく’,閉:‘とず’};
+const JC_D={
+建:{k:true,t:‘万事に吉。着始め・開店・種まきに良い。造作は凶’},除:{k:true,t:‘不浄を除く日。医療・大掃除に良い。婚礼は凶’},
+満:{k:true,t:‘万物満ちる日。結婚・移転に良い。服薬は凶’},平:{k:true,t:‘平らかな日。旅行・道普請に良い。穴掘りは凶’},
+定:{k:true,t:‘物事が定まる日。婚礼・開店に良い。訴訟は凶’},執:{k:false,t:‘農事・造作に良い。動土・移転は凶’},
+破:{k:false,t:‘万事破れる凶日。訴訟・交渉以外は凶’},危:{k:false,t:‘危険な日。旅行・登山・水辺は凶’},
+成:{k:true,t:‘物事が成就する日。婚礼・開店に良い。訴訟は凶’},納:{k:true,t:‘収め納める日。商い・五穀の収納に良い。婚礼は凶’},
+開:{k:true,t:‘開き通じる日。開店・開業・婚礼に良い。服薬・葬儀は凶’},閉:{k:false,t:‘閉じる日。金銭の収納・墓建てに良い。開店・婚礼は凶’}
+};
+const BJC=ms(2026,3,5);
+function getJC(y,m,d){return JC[((11+Math.floor((ms(y,m,d)-BJC)/86400000))%12+12)%12];}
+
+// 二十八宿 基準: 2026-03-05=角(0) ← hotdoglab.jp確認済み
+const S28=[‘角’,‘亢’,‘氐’,‘房’,‘心’,‘尾’,‘箕’,‘斗’,‘牛’,‘女’,‘虚’,‘危’,‘室’,‘壁’,‘奎’,‘婁’,‘胃’,‘昴’,‘畢’,‘觜’,‘参’,‘井’,‘鬼’,‘柳’,‘星’,‘張’,‘翼’,‘軫’];
+const S28_K=[‘角’,‘氐’,‘房’,‘心’,‘斗’,‘女’,‘虚’,‘奎’,‘婁’,‘胃’,‘畢’,‘井’,‘柳’,‘張’];
+const S28_R={角:‘かく’,亢:‘こう’,氐:‘てい’,房:‘ぼう’,心:‘しん’,尾:‘び’,箕:‘き’,斗:‘と’,牛:‘ぎゅう’,女:‘じょ’,虚:‘きょ’,危:‘き’,室:‘しつ’,壁:‘へき’,奎:‘けい’,婁:‘ろう’,胃:‘い’,昴:‘ぼう’,畢:‘ひつ’,觜:‘し’,参:‘しん’,井:‘せい’,鬼:‘き’,柳:‘りゅう’,星:‘せい’,張:‘ちょう’,翼:‘よく’,軫:‘しん’};
+const BS28=ms(2026,3,5);
+function getSyuku(y,m,d){return S28[((Math.floor((ms(y,m,d)-BS28)/86400000))%28+28)%28];}
+
+// 中段
+const CHUDAN=[‘天道’,‘天刑’,‘朱雀’,‘金堂’,‘天道’,‘玉堂’,‘天牢’,‘天刑’,‘玄武’,‘司命’,‘天道’,‘勾陳’,‘青龍’,‘天刑’,‘明堂’,‘天罰’,‘天道’,‘白虎’];
+const CD_K=[‘天道’,‘玉堂’,‘青龍’,‘明堂’,‘金堂’,‘司命’];
+const CD_KY=[‘天刑’,‘朱雀’,‘白虎’,‘天牢’,‘天罰’,‘玄武’,‘勾陳’];
+const BCD=ms(1984,1,1);
+function getChudan(y,m,d){return CHUDAN[((Math.floor((ms(y,m,d)-BCD)/86400000))%18+18)%18];}
+
+// 納音
+const NAION=[‘海中金’,‘海中金’,‘炉中火’,‘炉中火’,‘大林木’,‘大林木’,‘路傍土’,‘路傍土’,‘剣鋒金’,‘剣鋒金’,‘山頭火’,‘山頭火’,‘澗下水’,‘澗下水’,‘城頭土’,‘城頭土’,‘白蝋金’,‘白蝋金’,‘楊柳木’,‘楊柳木’,‘泉中水’,‘泉中水’,‘屋上土’,‘屋上土’,‘霹靂火’,‘霹靂火’,‘松柏木’,‘松柏木’,‘長流水’,‘長流水’,‘砂中金’,‘砂中金’,‘山下火’,‘山下火’,‘平地木’,‘平地木’,‘壁上土’,‘壁上土’,‘金箔金’,‘金箔金’,‘覆灯火’,‘覆灯火’,‘天河水’,‘天河水’,‘大駅土’,‘大駅土’,‘釵釧金’,‘釵釧金’,‘桑柘木’,‘桑柘木’,‘大渓水’,‘大渓水’,‘沙中土’,‘沙中土’,‘天上火’,‘天上火’,‘石榴木’,‘石榴木’,‘大海水’,‘大海水’];
+function getNaion(y,m,d){return NAION[getKS(y,m,d).idx];}
+
+// 二十四節気（概算）
+const SEKKI=[{m:1,d:6,n:‘小寒’},{m:1,d:20,n:‘大寒’},{m:2,d:4,n:‘立春’},{m:2,d:19,n:‘雨水’},{m:3,d:6,n:‘啓蟄’},{m:3,d:21,n:‘春分’},{m:4,d:5,n:‘清明’},{m:4,d:20,n:‘穀雨’},{m:5,d:6,n:‘立夏’},{m:5,d:21,n:‘小満’},{m:6,d:6,n:‘芒種’},{m:6,d:21,n:‘夏至’},{m:7,d:7,n:‘小暑’},{m:7,d:23,n:‘大暑’},{m:8,d:7,n:‘立秋’},{m:8,d:23,n:‘処暑’},{m:9,d:8,n:‘白露’},{m:9,d:23,n:‘秋分’},{m:10,d:8,n:‘寒露’},{m:10,d:23,n:‘霜降’},{m:11,d:7,n:‘立冬’},{m:11,d:22,n:‘小雪’},{m:12,d:7,n:‘大雪’},{m:12,d:22,n:‘冬至’}];
+function getSekki(m,d){return SEKKI.find(s=>s.m===m&&s.d===d)||null;}
+
+// 祝日
+const FHOL={‘1-1’:‘元日’,‘2-11’:‘建国記念の日’,‘2-23’:‘天皇誕生日’,‘4-29’:‘昭和の日’,‘5-3’:‘憲法記念日’,‘5-4’:‘みどりの日’,‘5-5’:‘こどもの日’,‘8-11’:‘山の日’,‘11-3’:‘文化の日’,‘11-23’:‘勤労感謝の日’};
+function getHol(y,m,d){
+if(FHOL[m+’-’+d])return FHOL[m+’-’+d];
+const sp=Math.floor(20.8431+0.242194*(y-1980)-Math.floor((y-1980)/4));
+const su=Math.floor(23.2488+0.242194*(y-1980)-Math.floor((y-1980)/4));
+if(m===3&&d===sp)return’春分の日’;if(m===9&&d===su)return’秋分の日’;
+const dw=new Date(y,m-1,d).getDay();
+if(m===1&&dw===1&&d>=8&&d<=14)return’成人の日’;
+if(m===7&&dw===1&&d>=15&&d<=21)return’海の日’;
+if(m===9&&dw===1&&d>=15&&d<=21)return’敬老の日’;
+if(m===10&&dw===1&&d>=8&&d<=14)return’スポーツの日’;
+return null;
+}
+
+// ══════════════════════════════════════════════
+// 選日データ（arachne.jp 2025〜2026年 全件照合済み）
+// ══════════════════════════════════════════════
+const ICHIRYU={
+2025:{1:[7,10,19,22,31],2:[6,13,18,25],3:[2,5,10,17,22,29],4:[3,4,13,16,25,28],5:[10,11,22,23],6:[3,4,5,6,17,18,29,30],7:[12,15,24,27],8:[5,11,18,23,30],9:[4,7,12,19,24],10:[1,6,16,19,28,31],11:[12,13,24,25],12:[6,8,9,20,21]},
+2026:{1:[1,2,5,14,17,26,29],2:[8,13,20,25],3:[4,5,12,17,24,29],4:[8,11,20,23],5:[2,5,6,17,18,29,30],6:[12,13,24,25],7:[6,7,10,19,22,31],8:[3,13,18,25,30],9:[6,7,14,19,26],10:[1,11,14,23,26],11:[4,7,8,19,20],12:[1,2,15,16,27,28]}
+};
+const TENSHA={
+2025:{3:[10],5:[25],7:[24],8:[7],10:[6],12:[21]},
+2026:{3:[5],5:[4,20],7:[19],10:[1],12:[16]}
+};
+const FUNASOJU={
+2025:{1:[5,13,21,31],2:[8,16,24],3:[1,9,17,25,29],4:[6,14,22],5:[1,17,31],6:[8,16,24,30],7:[8,16,24,30],8:[7,15,25],9:[2,10,18,23],10:[1,9,17,21,29],11:[6,14,23],12:[1,9,17,24]},
+2026:{1:[1,9,17,24],2:[1,8,19,27],3:[7,15,20,28],4:[5,13,21,29],5:[6,14,22,30],6:[7,15,23],7:[1,9,17,25],8:[2,10,18,26],9:[3,11,19,27],10:[4,12,20,28],11:[5,13,21,29],12:[6,14,22,30]}
+};
+function has(obj,y,m,d){return!!(obj[y]&&obj[y][m]&&obj[y][m].includes(d));}
+
+// ══════════════════════════════════════════════
+// 描画
+// ══════════════════════════════════════════════
+let cY,cM;
+const today=new Date();
+function ng(y){if(y>=2019)return’令和’+(y-2018)+‘年’;if(y>=1989)return’平成’+(y-1988)+‘年’;return y+‘年’;}
+
+function render(){
+const MN=[‘一月’,‘二月’,‘三月’,‘四月’,‘五月’,‘六月’,‘七月’,‘八月’,‘九月’,‘十月’,‘十一月’,‘十二月’];
+document.getElementById(‘monthLabel’).textContent=ng(cY)+’（’+cY+’）　’+MN[cM-1];
+const g=document.getElementById(‘calGrid’);
+while(g.children.length>7)g.removeChild(g.lastChild);
+const fd=new Date(cY,cM-1,1).getDay(),ld=new Date(cY,cM,0).getDate(),pl=new Date(cY,cM-1,0).getDate();
+for(let i=0;i<fd;i++){const pm=cM===1?12:cM-1,py=cM===1?cY-1:cY;g.appendChild(cell(py,pm,pl-fd+1+i,i,true));}
+for(let d=1;d<=ld;d++)g.appendChild(cell(cY,cM,d,(fd+d-1)%7,false));
+const tot=fd+ld,rem=tot%7===0?0:7-tot%7;
+const nm=cM===12?1:cM+1,ny=cM===12?cY+1:cY;
+for(let d=1;d<=rem;d++)g.appendChild(cell(ny,nm,d,(tot+d-1)%7,true));
+document.getElementById(‘detailPanel’).classList.remove(‘visible’);
+}
+
+function cell(y,m,d,dow,other){
+const t=has(TENSHA,y,m,d),ir=has(ICHIRYU,y,m,d),fj=has(FUNASOJU,y,m,d);
+const el=document.createElement(‘div’);
+el.className=‘day-cell’+(dow===0?’ sun’:dow===6?’ sat’:’’)+(other?’ other-month’:’’)+(t?’ has-tensha’:ir?’ has-kichi’:’’);
+const isTd=y===today.getFullYear()&&m===today.getMonth()+1&&d===today.getDate();
+if(isTd)el.classList.add(‘today’);
+const dn=document.createElement(‘div’);dn.className=‘day-num’;
+dn.innerHTML=isTd?’<span class="today-mark">’+d+’</span>’:d;
+el.appendChild(dn);
+const ri=getRyIdx(y,m,d);
+addL(el,‘lbl lbl-ry ‘+RY_CLS[ri],ROKUYO[ri]);
+const ks=getKS(y,m,d);addL(el,‘lbl lbl-ks’,ks.jk+ks.js);
+const jc=getJC(y,m,d);addL(el,‘lbl lbl-jc’,jc+’（’+JC_R[jc]+’）’);
+const sk=getSekki(m,d);if(sk)addL(el,‘lbl lbl-sk’,sk.n);
+const h=getHol(y,m,d);if(h)addL(el,‘lbl lbl-hol’,h);
+if(t)addL(el,‘lbl lbl-tensha’,‘天赦日’);
+if(ir)addL(el,‘lbl lbl-ichiryu’,‘一粒万倍’);
+if(fj)addL(el,‘lbl lbl-funasoju’,‘不成就’);
+el.addEventListener(‘click’,()=>showDetail(y,m,d,dow));
+return el;
+}
+function addL(p,c,t){const e=document.createElement(‘div’);e.className=c;e.textContent=t;p.appendChild(e);}
+
+function showDetail(y,m,d,dow){
+const DN=[‘日曜日’,‘月曜日’,‘火曜日’,‘水曜日’,‘木曜日’,‘金曜日’,‘土曜日’];
+document.getElementById(‘detailDate’).textContent=ng(y)+m+‘月’+d+‘日　‘+DN[dow];
+const l=getLunar(y,m,d),ks=getKS(y,m,d),ri=getRyIdx(y,m,d),jc=getJC(y,m,d);
+const jcd=JC_D[jc]||{},sy=getSyuku(y,m,d),cd=getChudan(y,m,d);
+const sk=getSekki(m,d),h=getHol(y,m,d),t=has(TENSHA,y,m,d),ir=has(ICHIRYU,y,m,d),fj=has(FUNASOJU,y,m,d);
+const lstr=l?(l.lm===60?‘閏6’:l.lm)+‘月’+l.ld+‘日’:‘不明’;
+const di=(lb,v,c=’’)=>’<div class="di"><span class="di-label">’+lb+’</span><div class="di-val '+c+'">’+v+’</div></div>’;
+const jo=[
+di(‘六　曜’,ROKUYO[ri]),di(‘干支（日）’,ks.jk+ks.js+’（’+ks.yr+’）’),
+di(‘旧　暦’,lstr),di(‘九　星’,getKusei(y,m,d)),di(‘年の干支’,getYearKS(y)),
+sk?di(‘二十四節気’,sk.n,‘kichi’):’’,h?di(‘祝祭日’,h,‘holiday’):’’
+].filter(Boolean).join(’’);
+const ge=[
+di(‘十二直’,jc+’（’+JC_R[jc]+’）’,jcd.k?‘kichi’:‘kyou’),
+di(‘十二直 意味’,jcd.t||’’,jcd.k?‘kichi’:‘kyou’),
+di(‘二十八宿’,sy+’（’+S28_R[sy]+’）’,S28_K.includes(sy)?‘kichi’:’’),
+di(‘中　段’,cd,CD_K.includes(cd)?‘kichi’:CD_KY.includes(cd)?‘kyou’:’’),
+di(‘納　音’,getNaion(y,m,d))
+].join(’’);
+const sds=[];
+if(t)sds.push({n:‘天赦日’,c:‘tensha’,d:‘最上の吉日。この日に始めたことは何事もうまくいくとされる’});
+if(ir)sds.push({n:‘一粒万倍日’,c:‘kichi’,d:‘一粒の種が万倍に実る吉日。新事業・貯蓄・財布の使い始めに吉’});
+if(fj)sds.push({n:‘不成就日’,c:‘kyou’,d:‘何事も成就しない凶日。結婚・開業・引越・命名は避けるべし’});
+const sdHTML=sds.length?’<div><div class="block-title">── 選 日 ──</div><div class="sd-list">’+sds.map(s=>’<span class="sd-tag '+s.c+'">’+s.n+’</span>’).join(’’)+’</div><div class="sd-descs">’+sds.map(s=>’<div class="sd-desc"><b>’+s.n+’</b>：’+s.d+’</div>’).join(’’)+’</div></div>’:’’;
+document.getElementById(‘detailSections’).innerHTML=
+‘<div><div class="block-title">── 暦 注 上 段 ──</div><div class="detail-grid">’+jo+’</div></div>’+
+‘<div><div class="block-title">── 暦 注 下 段 ──</div><div class="detail-grid">’+ge+’</div></div>’+sdHTML;
+const p=document.getElementById(‘detailPanel’);p.classList.add(‘visible’);p.scrollIntoView({behavior:‘smooth’,block:‘nearest’});
+}
+
+document.getElementById(‘prevBtn’).onclick=()=>{cM–;if(cM<1){cM=12;cY–;}render();};
+document.getElementById(‘nextBtn’).onclick=()=>{cM++;if(cM>12){cM=1;cY++;}render();};
+cY=today.getFullYear();cM=today.getMonth()+1;render();
+</script>
+
+</body>
+</html>
